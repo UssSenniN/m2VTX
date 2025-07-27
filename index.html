@@ -11,6 +11,7 @@
       background-color: #f0f2f5;
       margin: 0;
       padding: 12px;
+      transition: background 0.3s, color 0.3s;
     }
     .container {
       max-width: 540px;
@@ -49,6 +50,10 @@
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background-color: #005fa3;
     }
     .resultado {
       margin-top: 24px;
@@ -57,6 +62,12 @@
       border-radius: 8px;
       font-size: 18px;
       line-height: 1.6;
+    }
+    .erro {
+      color: #c00;
+      font-weight: bold;
+      margin-top: 12px;
+      display: block;
     }
     footer {
       margin-top: 40px;
@@ -80,6 +91,10 @@
     body.dark-mode .resultado {
       background-color: #3a3a3a;
     }
+    @media (max-width: 600px) {
+      .container { padding: 8px; }
+      button { font-size: 14px; padding: 10px; }
+    }
   </style>
 </head>
 <body>
@@ -96,16 +111,16 @@
     <input type="text" id="idProduto" placeholder="Ex: CERAM-456XY Ravy">    
 
     <label>Área total (m²):</label>
-    <input type="number" id="areaTotal">
+    <input type="number" id="areaTotal" min="0" step="0.01">
 
     <label>Área por caixa (m²):</label>
-    <input type="number" step="0.01" id="areaCaixa">
+    <input type="number" step="0.01" id="areaCaixa" min="0">
 
     <label>Valor do m² (R$):</label>
-    <input type="number" step="0.01" id="valorMetro">
+    <input type="number" step="0.01" id="valorMetro" min="0">
 
     <label>Margem de sobra (%):</label>
-    <input type="number" id="margemSobra" value="10">
+    <input type="number" id="margemSobra" value="10" min="0">
 
     <button onclick="calcularCeramica()">Calcular valor</button>
     <div class="resultado" id="resultadoCeramica"></div>
@@ -113,7 +128,21 @@
     <hr style="margin: 24px 0;">
 
     <label>Preço por saco de argamassa (20kg):</label>
-    <input type="number" step="0.01" id="argamassaOutro" placeholder="Ex: 19.90">
+    <input type="number" step="0.01" id="argamassaOutro" placeholder="Ex: 19.90" min="0">
+
+    <label>Parcelamento:</label>
+    <select id="parcelasSelect">
+      <option value="1">1x sem juros</option>
+      <option value="2">2x sem juros</option>
+      <option value="3">3x sem juros</option>
+      <option value="4">4x sem juros</option>
+      <option value="5">5x sem juros</option>
+      <option value="6">6x sem juros</option>
+      <option value="7">7x sem juros</option>
+      <option value="8">8x sem juros</option>
+      <option value="9">9x sem juros</option>
+      <option value="10">10x sem juros</option>
+    </select>
 
     <button onclick="calcularTotal()">Calcular Total com Argamassa e Rejunte</button>
     <div class="resultado" id="resultadoFinal"></div>
@@ -128,219 +157,139 @@
     <button onclick="limparTudo()">Limpar Tudo</button>
 
     <div class="resultado" id="resultadoComparativo"></div>
-}<script>
-  let areaComSobraGlobal = 0;
-  let areaAdquiridaGlobal = 0;
-
-  function calcularCeramica() {
-    const area = parseFloat(document.getElementById("areaTotal").value);
-    const areaCaixa = parseFloat(document.getElementById("areaCaixa").value);
-    const valorMetro = parseFloat(document.getElementById("valorMetro").value);
-    const sobra = parseFloat(document.getElementById("margemSobra").value) / 100;
-
-    if (isNaN(area) || isNaN(areaCaixa) || isNaN(valorMetro)) {
-      document.getElementById("resultadoCeramica").innerHTML = "Preencha os campos obrigatórios.";
-      return;
-    }
-
-    const areaComSobra = area * (1 + sobra);
-    const caixas = Math.ceil(areaComSobra / areaCaixa);
-    const areaRealAdquirida = caixas * areaCaixa;
-    const valorPiso = areaRealAdquirida * valorMetro;
-
-    areaComSobraGlobal = areaComSobra;
-    areaAdquiridaGlobal = areaRealAdquirida;
-
-    document.getElementById("resultadoCeramica").innerHTML = `
-      <strong>Área com sobra:</strong> ${areaComSobra.toFixed(2)} m²<br>
-      <strong>Caixas necessárias:</strong> ${caixas}<br>
-      <strong>Área real adquirida:</strong> ${areaRealAdquirida.toFixed(2)} m²<br>
-      <strong>Valor da cerâmica:</strong> R$ ${valorPiso.toFixed(2)}
-    `;
-  }
-
-  function calcularTotal() {
-    const tipo = document.getElementById("tipoPiso")?.value || "ceramica";
-    const valorMetro = parseFloat(document.getElementById("valorMetro").value);
-    const precoArgamassa = parseFloat(document.getElementById("argamassaOutro").value) || 0;
-
-    if (!areaAdquiridaGlobal || isNaN(valorMetro) || isNaN(precoArgamassa)) {
-      document.getElementById("resultadoFinal").innerHTML = "Preencha os campos corretamente e calcule primeiro a cerâmica.";
-      return;
-    }
-
-    const valorPiso = areaAdquiridaGlobal * valorMetro;
-    const sacosArgamassa = Math.ceil(areaAdquiridaGlobal / 3);
-    const valorArgamassa = sacosArgamassa * precoArgamassa;
-
-    const totalKgRejunte = areaAdquiridaGlobal / 5;
-    const arredondadoKg = totalKgRejunte % 1 >= 0.5 ? Math.ceil(totalKgRejunte) : Math.floor(totalKgRejunte);
-    const sacos5kg = Math.floor(arredondadoKg / 5);
-    const restanteKg = arredondadoKg - (sacos5kg * 5);
-    const sacos1kg = restanteKg;
-
-    let valorRejunte = tipo === "ceramica"
-      ? (sacos5kg * 59.90) + (sacos1kg * 14.90)
-      : (sacos5kg * 91.90) + (sacos1kg * 23.90);
-
-    const total = valorPiso + valorArgamassa + valorRejunte;
-
-    let parcelas = "";
-    if (total >= 400) {
-      for (let i = 1; i <= 10; i++) {
-        let vp = (total / i).toFixed(2);
-        parcelas += `${i}x de R$ ${vp}<br>`;
-      }
-    } else {
-      const minParcela = 40;
-      const nParcelas = Math.floor(total / minParcela) || 1;
-      for (let i = 1; i <= nParcelas; i++) {
-        let vp = (total / i).toFixed(2);
-        parcelas += `${i}x de R$ ${vp}<br>`;
-      }
-    }
-
-    document.getElementById("resultadoFinal").innerHTML = `
-      <strong>Argamassa:</strong><br>
-      - Área base: ${areaAdquiridaGlobal.toFixed(2)} m²<br>
-      - Cálculo: ${areaAdquiridaGlobal.toFixed(2)} ÷ 3 = ${sacosArgamassa} sacos<br>
-      - Valor: R$ ${valorArgamassa.toFixed(2)}<br><br>
-
-      <strong>Rejunte (${tipo === 'ceramica' ? 'Cerâmica' : 'Porcelanato'}):</strong><br>
-      - Estimado: ${totalKgRejunte.toFixed(1)} kg → Arredondado: ${arredondadoKg} kg<br>
-      - Sacos de 5kg: ${sacos5kg}<br>
-      - Sacos de 1kg: ${sacos1kg}<br>
-      - Valor: R$ ${valorRejunte.toFixed(2)}<br><br>
-
-      <strong>Total geral:</strong> R$ ${total.toFixed(2)}<br><br>
-      <strong>Parcelamento:</strong><br>${parcelas}
-    `;
-  }
-
-  function gerarPDF() {
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF();
-
-    const cliente = document.getElementById("idProduto").value || "Não informado";
-    const resultado = `ID / Cliente: ${cliente}\n\n` +
-                      document.getElementById('resultadoCeramica').innerText + "\n\n" +
-                      document.getElementById('resultadoFinal').innerText;
-
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(12);
-    doc.text("Orçamento de Piso", 20, 20);
-    doc.setFontSize(10);
-    doc.text(resultado, 20, 30);
-    doc.save("orcamento-piso.pdf");
-  }
-
-  function limparTudo() {
-    document.querySelectorAll("input").forEach(inp => inp.value = "");
-    document.getElementById("resultadoCeramica").innerHTML = "";
-    document.getElementById("resultadoFinal").innerHTML = "";
-    document.getElementById("resultadoComparativo").innerHTML = "";
-    areaAdquiridaGlobal = 0;
-    areaComSobraGlobal = 0;
-  }
-
-  document.getElementById('toggleTema').addEventListener('change', function () {
-    document.body.classList.toggle('dark-mode', this.checked);
-    localStorage.setItem('temaEscuro', this.checked ? '1' : '0');
-  });
-
-  window.addEventListener('DOMContentLoaded', () => {
-    const escuro = localStorage.getItem('temaEscuro') === '1';
-    document.body.classList.toggle('dark-mode', escuro);
-    document.getElementById('toggleTema').checked = escuro;
-  });
-  <h3>Resultados salvos:</h3>
-<ul id="listaResultados"></ul>
-  window.onload = atualizarLista;
-
-function calcular() {
-  const area = parseFloat(document.getElementById("area").value);
-  const pecas = parseFloat(document.getElementById("pecas").value);
-
-  if (isNaN(area) || isNaN(pecas) || area <= 0 || pecas <= 0) {
-    alert("Digite valores válidos.");
-    return;
-  }
-
-  const total = Math.ceil(area * pecas);
-  const resultado = `Área: ${area} m² | Peças/m²: ${pecas} → Total: ${total} peças`;
-
-  let dados = JSON.parse(localStorage.getItem("resultadosCeramica")) || [];
-  dados.push(resultado);
-  localStorage.setItem("resultadosCeramica", JSON.stringify(dados));
-
-  document.getElementById("area").value = "";
-  document.getElementById("pecas").value = "";
-  atualizarLista();
-}
-
-function excluir(indice) {
-  let dados = JSON.parse(localStorage.getItem("resultadosCeramica")) || [];
-  dados.splice(indice, 1);
-  localStorage.setItem("resultadosCeramica", JSON.stringify(dados));
-  atualizarLista();
-}
-
-function atualizarLista() {
-  const dados = JSON.parse(localStorage.getItem("resultadosCeramica")) || [];
-  const lista = document.getElementById("listaResultados");
-  lista.innerHTML = "";
-
-  dados.forEach((item, index) => {
-    const li = document.createElement("li");
-    li.innerHTML = `${item} <button onclick="excluir(${index})">Excluir</button>`;
-    lista.appendChild(li);
-  });
-}
-  <h3>Resultados salvos:</h3>
-<ul id="listaResultados"></ul>window.onload = atualizarLista;
-
-function calcular() {
-  const area = parseFloat(document.getElementById("area").value);
-  const pecas = parseFloat(document.getElementById("pecas").value);
-
-  if (isNaN(area) || isNaN(pecas) || area <= 0 || pecas <= 0) {
-    alert("Digite valores válidos.");
-    return;
-  }
-
-  const total = Math.ceil(area * pecas);
-  const resultado = `Área: ${area} m² | Peças/m²: ${pecas} → Total: ${total} peças`;
-
-  let dados = JSON.parse(localStorage.getItem("resultadosCeramica")) || [];
-  dados.push(resultado);
-  localStorage.setItem("resultadosCeramica", JSON.stringify(dados));
-
-  document.getElementById("area").value = "";
-  document.getElementById("pecas").value = "";
-  atualizarLista();
-}
-
-function excluir(indice) {
-  let dados = JSON.parse(localStorage.getItem("resultadosCeramica")) || [];
-  dados.splice(indice, 1);
-  localStorage.setItem("resultadosCeramica", JSON.stringify(dados));
-  atualizarLista();
-}
-
-function atualizarLista() {
-  const dados = JSON.parse(localStorage.getItem("resultadosCeramica")) || [];
-  const lista = document.getElementById("listaResultados");
-  lista.innerHTML = "";
-
-  dados.forEach((item, index) => {
-    const li = document.createElement("li");
-    li.innerHTML = `${item} <button onclick="excluir(${index})">Excluir</button>`;
-    lista.appendChild(li);
-  });
-}
-</script>    <footer>
-      Todos os direitos reservado a <strong>m2V</strong> · Versão 2.3
+    <footer>
+      Todos os direitos reservado a <strong>m2V</strong> · Versão 2.4
     </footer>
   </div>
+  <script>
+    let areaComSobraGlobal = 0;
+    let areaAdquiridaGlobal = 0;
+    let totalGlobal = 0;
+    let parcelaEscolhida = 1;
+    let valorParcelaEscolhida = 0;
+
+    function calcularCeramica() {
+      const area = parseFloat(document.getElementById("areaTotal").value);
+      const areaCaixa = parseFloat(document.getElementById("areaCaixa").value);
+      const valorMetro = parseFloat(document.getElementById("valorMetro").value);
+      const sobra = parseFloat(document.getElementById("margemSobra").value) / 100;
+
+      if (isNaN(area) || isNaN(areaCaixa) || isNaN(valorMetro) || area <= 0 || areaCaixa <= 0 || valorMetro <= 0) {
+        document.getElementById("resultadoCeramica").innerHTML = "<span class='erro'>Preencha todos os campos obrigatórios com valores maiores que zero.</span>";
+        return;
+      }
+
+      const areaComSobra = area * (1 + sobra);
+      const caixas = Math.ceil(areaComSobra / areaCaixa);
+      const areaRealAdquirida = caixas * areaCaixa;
+      const valorPiso = areaRealAdquirida * valorMetro;
+
+      areaComSobraGlobal = areaComSobra;
+      areaAdquiridaGlobal = areaRealAdquirida;
+
+      document.getElementById("resultadoCeramica").innerHTML = `
+        <strong>Área com sobra:</strong> ${areaComSobra.toFixed(2)} m²<br>
+        <strong>Caixas necessárias:</strong> ${caixas}<br>
+        <strong>Área real adquirida:</strong> ${areaRealAdquirida.toFixed(2)} m²<br>
+        <strong>Valor da cerâmica:</strong> R$ ${valorPiso.toFixed(2)}
+      `;
+    }
+
+    function calcularTotal() {
+      const tipo = document.getElementById("tipoPiso")?.value || "ceramica";
+      const valorMetro = parseFloat(document.getElementById("valorMetro").value);
+      const precoArgamassa = parseFloat(document.getElementById("argamassaOutro").value) || 0;
+      const parcelas = parseInt(document.getElementById("parcelasSelect").value);
+
+      if (!areaAdquiridaGlobal || isNaN(valorMetro) || isNaN(precoArgamassa) || valorMetro <= 0 || precoArgamassa < 0) {
+        document.getElementById("resultadoFinal").innerHTML = "<span class='erro'>Preencha os campos corretamente e calcule primeiro a cerâmica.</span>";
+        return;
+      }
+
+      const valorPiso = areaAdquiridaGlobal * valorMetro;
+      const sacosArgamassa = Math.ceil(areaAdquiridaGlobal / 3);
+      const valorArgamassa = sacosArgamassa * precoArgamassa;
+
+      const totalKgRejunte = areaAdquiridaGlobal / 5;
+      const arredondadoKg = totalKgRejunte % 1 >= 0.5 ? Math.ceil(totalKgRejunte) : Math.floor(totalKgRejunte);
+      const sacos5kg = Math.floor(arredondadoKg / 5);
+      const restanteKg = arredondadoKg - (sacos5kg * 5);
+      const sacos1kg = restanteKg;
+
+      let valorRejunte = tipo === "ceramica"
+        ? (sacos5kg * 59.90) + (sacos1kg * 14.90)
+        : (sacos5kg * 91.90) + (sacos1kg * 23.90);
+
+      const total = valorPiso + valorArgamassa + valorRejunte;
+      totalGlobal = total;
+
+      // Parcelamento
+      let valorParcela = total / parcelas;
+      if (valorParcela < 40) {
+        document.getElementById("resultadoFinal").innerHTML = `<span class='erro'>O valor mínimo de cada parcela é R$ 40,00.<br>Escolha menos parcelas.</span>`;
+        parcelaEscolhida = 1;
+        valorParcelaEscolhida = total;
+        return;
+      } else {
+        parcelaEscolhida = parcelas;
+        valorParcelaEscolhida = valorParcela;
+      }
+
+      document.getElementById("resultadoFinal").innerHTML = `
+        <strong>Total geral:</strong> R$ ${total.toFixed(2)}<br>
+        <strong>Parcelamento escolhido:</strong> ${parcelas}x de R$ ${valorParcela.toFixed(2)} sem juros
+      `;
+    }
+
+    function gerarPDF() {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF();
+
+      const cliente = document.getElementById("idProduto").value || "Não informado";
+      const tipoPiso = document.getElementById("tipoPiso").value === "ceramica" ? "Cerâmica" : "Porcelanato";
+      const areaTotal = document.getElementById("areaTotal").value;
+      const valorMetro = document.getElementById("valorMetro").value;
+      const total = totalGlobal;
+      const parcelas = parcelaEscolhida;
+      const valorParcela = valorParcelaEscolhida;
+
+      let texto = `Orçamento de Piso\n\n`;
+      texto += `Cliente/Produto: ${cliente}\n`;
+      texto += `Tipo de Piso: ${tipoPiso}\n`;
+      texto += `Área Total: ${areaTotal} m²\n`;
+      texto += `Valor do m²: R$ ${parseFloat(valorMetro).toFixed(2)}\n`;
+      texto += `\nTotal: R$ ${total.toFixed(2)}\n`;
+      texto += `Parcelamento: ${parcelas}x de R$ ${valorParcela.toFixed(2)} sem juros`;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(12);
+      doc.text(texto, 20, 20);
+      doc.save("orcamento-piso.pdf");
+    }
+
+    function limparTudo() {
+      document.querySelectorAll("input").forEach(inp => inp.value = "");
+      document.getElementById("resultadoCeramica").innerHTML = "";
+      document.getElementById("resultadoFinal").innerHTML = "";
+      document.getElementById("resultadoComparativo").innerHTML = "";
+      areaAdquiridaGlobal = 0;
+      areaComSobraGlobal = 0;
+      totalGlobal = 0;
+      parcelaEscolhida = 1;
+      valorParcelaEscolhida = 0;
+      document.getElementById("parcelasSelect").value = "1";
+    }
+
+    document.getElementById('toggleTema').addEventListener('change', function () {
+      document.body.classList.toggle('dark-mode', this.checked);
+      localStorage.setItem('temaEscuro', this.checked ? '1' : '0');
+    });
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const escuro = localStorage.getItem('temaEscuro') === '1';
+      document.body.classList.toggle('dark-mode', escuro);
+      document.getElementById('toggleTema').checked = escuro;
+    });
+  </script>
 </body>
 </html>
