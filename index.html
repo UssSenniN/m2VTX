@@ -11,7 +11,6 @@
       background-color: #f0f2f5;
       margin: 0;
       padding: 12px;
-      transition: background 0.3s, color 0.3s;
     }
     .container {
       max-width: 540px;
@@ -50,10 +49,6 @@
       border-radius: 6px;
       font-size: 16px;
       cursor: pointer;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background-color: #005fa3;
     }
     .resultado {
       margin-top: 24px;
@@ -111,16 +106,16 @@
     <input type="text" id="idProduto" placeholder="Ex: CERAM-456XY Ravy">    
 
     <label>Área total (m²):</label>
-    <input type="number" id="areaTotal" min="0" step="0.01">
+    <input type="number" id="areaTotal">
 
     <label>Área por caixa (m²):</label>
-    <input type="number" step="0.01" id="areaCaixa" min="0">
+    <input type="number" step="0.01" id="areaCaixa">
 
     <label>Valor do m² (R$):</label>
-    <input type="number" step="0.01" id="valorMetro" min="0">
+    <input type="number" step="0.01" id="valorMetro">
 
     <label>Margem de sobra (%):</label>
-    <input type="number" id="margemSobra" value="10" min="0">
+    <input type="number" id="margemSobra" value="10">
 
     <button onclick="calcularCeramica()">Calcular valor</button>
     <div class="resultado" id="resultadoCeramica"></div>
@@ -128,7 +123,7 @@
     <hr style="margin: 24px 0;">
 
     <label>Preço por saco de argamassa (20kg):</label>
-    <input type="number" step="0.01" id="argamassaOutro" placeholder="Ex: 19.90" min="0">
+    <input type="number" step="0.01" id="argamassaOutro" placeholder="Ex: 19.90">
 
     <label>Parcelamento:</label>
     <select id="parcelasSelect">
@@ -235,7 +230,13 @@
         valorParcelaEscolhida = valorParcela;
       }
 
+      // Exibir quantidades de argamassa e rejunte no resultado final
       document.getElementById("resultadoFinal").innerHTML = `
+        <strong>Argamassa:</strong> ${sacosArgamassa} saco(s) de 20kg<br>
+        <strong>Rejunte:</strong> 
+          ${sacos5kg > 0 ? sacos5kg + ' saco(s) de 5kg' : ''}
+          ${(sacos5kg > 0 && sacos1kg > 0) ? ' e ' : ''}
+          ${sacos1kg > 0 ? sacos1kg + ' saco(s) de 1kg' : ''}<br>
         <strong>Total geral:</strong> R$ ${total.toFixed(2)}<br>
         <strong>Parcelamento escolhido:</strong> ${parcelas}x de R$ ${valorParcela.toFixed(2)} sem juros
       `;
@@ -253,12 +254,26 @@
       const parcelas = parcelaEscolhida;
       const valorParcela = valorParcelaEscolhida;
 
+      // Recuperar quantidades de argamassa e rejunte
+      const valorMetroNum = parseFloat(valorMetro);
+      const sacosArgamassa = Math.ceil(areaAdquiridaGlobal / 3);
+      const totalKgRejunte = areaAdquiridaGlobal / 5;
+      const arredondadoKg = totalKgRejunte % 1 >= 0.5 ? Math.ceil(totalKgRejunte) : Math.floor(totalKgRejunte);
+      const sacos5kg = Math.floor(arredondadoKg / 5);
+      const restanteKg = arredondadoKg - (sacos5kg * 5);
+      const sacos1kg = restanteKg;
+
       let texto = `Orçamento de Piso\n\n`;
       texto += `Cliente/Produto: ${cliente}\n`;
       texto += `Tipo de Piso: ${tipoPiso}\n`;
       texto += `Área Total: ${areaTotal} m²\n`;
-      texto += `Valor do m²: R$ ${parseFloat(valorMetro).toFixed(2)}\n`;
-      texto += `\nTotal: R$ ${total.toFixed(2)}\n`;
+      texto += `Valor do m²: R$ ${valorMetroNum.toFixed(2)}\n`;
+      texto += `Argamassa: ${sacosArgamassa} saco(s) de 20kg\n`;
+      texto += `Rejunte: `;
+      if (sacos5kg > 0) texto += `${sacos5kg} saco(s) de 5kg`;
+      if (sacos5kg > 0 && sacos1kg > 0) texto += ' e ';
+      if (sacos1kg > 0) texto += `${sacos1kg} saco(s) de 1kg`;
+      texto += `\n\nTotal: R$ ${total.toFixed(2)}\n`;
       texto += `Parcelamento: ${parcelas}x de R$ ${valorParcela.toFixed(2)} sem juros`;
 
       doc.setFont("helvetica", "normal");
